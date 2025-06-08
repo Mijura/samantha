@@ -8,7 +8,10 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 30
+    Runtime: nodejs18.x
+    Architectures:
+      - x86_64
 
 Resources:
   HelloWorldFunction:
@@ -16,9 +19,7 @@ Resources:
     Properties:
       CodeUri: hello-world/
       Handler: app.lambdaHandler
-      Runtime: nodejs22.x
-      Architectures:
-      - x86_64
+      Runtime: nodejs18.x
       Events:
         HelloWorld:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -47,6 +48,96 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
+
+  GmailTokensTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-gmail-tokens
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  GmailAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: gmail-service/
+      Handler: src/app.getAuthUrl
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GmailTokensTable
+      Environment:
+        Variables:
+          TOKENS_TABLE: !Ref GmailTokensTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+      Events:
+        GetAuthUrl:
+          Type: Api
+          Properties:
+            Path: /gmail/auth
+            Method: get
+
+  GmailCallbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: gmail-service/
+      Handler: src/app.handleCallback
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GmailTokensTable
+      Environment:
+        Variables:
+          TOKENS_TABLE: !Ref GmailTokensTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+      Events:
+        HandleCallback:
+          Type: Api
+          Properties:
+            Path: /gmail/callback
+            Method: post
+
+  GmailLastEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: gmail-service/
+      Handler: src/app.getLastEmail
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GmailTokensTable
+      Environment:
+        Variables:
+          TOKENS_TABLE: !Ref GmailTokensTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REDIRECT_URI: !Ref GoogleRedirectUri
+      Events:
+        GetLastEmail:
+          Type: Api
+          Properties:
+            Path: /gmail/last-email
+            Method: get
+
+Parameters:
+  GoogleClientId:
+    Type: String
+    Description: Google OAuth2 Client ID
+  
+  GoogleClientSecret:
+    Type: String
+    Description: Google OAuth2 Client Secret
+    NoEcho: true
+  
+  GoogleRedirectUri:
+    Type: String
+    Description: Google OAuth2 Redirect URI
+
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM

@@ -1,5 +1,25 @@
 {
+  "name": "samantha-backend",
+  "version": "1.0.0",
+  "description": "Samantha backend with Gmail integration",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "ts-node src/app.ts",
+    "sam:build": "sam build --profile Development",
+    "sam:deploy": "sam deploy --profile Development --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND",
+    "sam:serve": "sam local start-api --profile Development --port 8000 --region eu-west-1 --env-vars env.json",
+    "sam:start": "sam local start-api --profile Development --port 8000 --region eu-west-1 --env-vars env.json"
+  },
   "dependencies": {
-    "@honeycomb-app/hexacore": "^0.0.2"
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "googleapis": "^129.0.0",
+    "google-auth-library": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
   }
 }
