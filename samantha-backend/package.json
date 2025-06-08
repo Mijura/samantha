@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@honeycomb-app/hexacore": "^0.0.2"
+  }
+}
